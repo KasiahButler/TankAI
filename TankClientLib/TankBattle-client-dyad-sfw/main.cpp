@@ -1,6 +1,6 @@
 #include <iostream>
 #include <sstream>
-
+#include "Agent.h"
 #include "TankBattleNet.h"
 #include "sfwdraw.h"
 #undef NONE     // sfw defines NONE as one of its colors; we won't be needing that
@@ -23,6 +23,8 @@ const char GAME_QUIT = 'L';
 const int WINDOW_HEIGHT = 800;
 const int WINDOW_WIDTH = 400;
 
+bool hControl = false;
+
 // Polls all printable characters for a key press
 // Returns true if a key press was detected, otherwise returns false
 bool inputPressed()
@@ -39,6 +41,12 @@ bool inputPressed()
 
 int main(int argc, char** argv)
 {
+
+	TankAgent tAgent;
+	tAgent.cS = tAgent.SEARCH;
+	tAgent.tS = tAgent.ROAM;
+	tAgent.timer = 0.0f;
+
     char * serverIPAddress = "";
 
     // handle console arguments
@@ -119,29 +127,33 @@ int main(int argc, char** argv)
             ex.tankMove = tankNet::TankMovementOptions::HALT;
             ex.cannonMove = tankNet::CannonMovementOptions::HALT;
 
-            // poll for input
-            if (inputPressed())
-            {
-                // tank actions
-                ex.tankMove = sfw::getKey(TANK_FWRD) ? tankNet::TankMovementOptions::FWRD :
-                    sfw::getKey(TANK_BACK) ? tankNet::TankMovementOptions::BACK :
-                    sfw::getKey(TANK_LEFT) ? tankNet::TankMovementOptions::LEFT :
-                    sfw::getKey(TANK_RIGT) ? tankNet::TankMovementOptions::RIGHT :
-                    tankNet::TankMovementOptions::HALT;
+			if (hControl)
+			{
+				// poll for input
+				if (inputPressed())
+				{
+					// tank actions
+					ex.tankMove = sfw::getKey(TANK_FWRD) ? tankNet::TankMovementOptions::FWRD :
+						sfw::getKey(TANK_BACK) ? tankNet::TankMovementOptions::BACK :
+						sfw::getKey(TANK_LEFT) ? tankNet::TankMovementOptions::LEFT :
+						sfw::getKey(TANK_RIGT) ? tankNet::TankMovementOptions::RIGHT :
+						tankNet::TankMovementOptions::HALT;
 
-                ex.cannonMove = sfw::getKey(CANN_LEFT) ? tankNet::CannonMovementOptions::LEFT :
-                    sfw::getKey(CANN_RIGT) ? tankNet::CannonMovementOptions::RIGHT :
-                    tankNet::CannonMovementOptions::HALT;
+					ex.cannonMove = sfw::getKey(CANN_LEFT) ? tankNet::CannonMovementOptions::LEFT :
+						sfw::getKey(CANN_RIGT) ? tankNet::CannonMovementOptions::RIGHT :
+						tankNet::CannonMovementOptions::HALT;
 
-                ex.fireWish = sfw::getKey(TANK_FIRE);
+					ex.fireWish = sfw::getKey(TANK_FIRE);
 
-                // game actions
-                if (sfw::getKey(GAME_QUIT))
-                {
-                    ex.msg = tankNet::TankBattleMessage::QUIT;
-                    break;
-                }
-            }
+					// game actions
+					if (sfw::getKey(GAME_QUIT))
+					{
+						ex.msg = tankNet::TankBattleMessage::QUIT;
+						break;
+					}
+				}
+			}
+			else { ex = tAgent.update(*state); }
 
             // begin transmission
             tankNet::send(ex);
