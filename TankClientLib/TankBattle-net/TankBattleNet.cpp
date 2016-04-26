@@ -30,7 +30,8 @@ namespace tankNet
 
 		// HACK: discard this transmission
 		// develop a better messaging protocol
-		if (msg->messageLength <= 0)
+		if (msg->messageLength <= 0 ||
+            msg->messageLength != sizeof(TankBattleStateData))
 			return;
 
         // TODO: RTCs
@@ -64,7 +65,7 @@ namespace tankNet
         _isProvisioned = false;
     }
     
-    bool init(int port, char * address)
+    bool init(char * serverAddress, int serverPort)
     {
         dyad_init();
 
@@ -80,20 +81,22 @@ namespace tankNet
         dyad_addListener(stream, DYAD_EVENT_CONNECT, onConnect, 0);
         dyad_addListener(stream, DYAD_EVENT_CLOSE, onClose, 0);
 
-
-        if (dyad_connect(stream, address, port) == -1)
+        if (dyad_connect(stream, serverAddress, serverPort) == -1)
         {
             std::cerr << "Failed to resolve server host.\n";
             return false;
         }
     }
 
-    bool update(double timeout)
+    bool update(double timeToBlock)
     {
         if (_isErrored)
             return false;
+        
+        if (dyad_getStreamCount() < 1)
+            _isConnected = false;
 
-        dyad_setUpdateTimeout(timeout);
+        dyad_setUpdateTimeout(timeToBlock);
         dyad_update();
 
         return true;
@@ -114,22 +117,21 @@ namespace tankNet
         dyad_shutdown();
     }
 
-    void send(TankBattleCommand output)
+    void send(TankBattleCommand command)
     {
-        if (!isProvisioned)
+        if (!isConnected)
             return;
 
         const int msgSize = sizeof(TankBattleCommand);
         unsigned char msg[msgSize];
 
-        memcpy_s(&msg, msgSize, &output, sizeof(TankBattleCommand));
+        memcpy_s(&msg, msgSize, &command, sizeof(TankBattleCommand));
         dyad_write(stream, &msg, msgSize);
     }
 
     TankBattleStateData * recieve()
     {
         TankBattleStateData * lastState = ((TankBattleStateData*)lastMessage);
-        //lastState->tacticoolData = (TankTacticoolInfo*)(((char*)lastState) + offsetof(TankBattleStateData, tacticoolData));
 
         return lastState;
     }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <ostream>
-
 namespace tankNet
 {
 	enum class TankBattleMessage
@@ -28,6 +26,14 @@ namespace tankNet
 		RIGHT
 	};
 
+    enum class TankHealthStatus
+    {
+        DEAD,
+        CRITICAL,
+        HURT,
+        HEALTHY
+    };
+
 	struct TankBattleCommand
 	{
 		TankBattleMessage msg;              // declare message type
@@ -38,16 +44,19 @@ namespace tankNet
 		int messageLength = sizeof(TankBattleCommand);
 	};
 
-	struct TankTacticoolInfo
+	struct TankTacticalInfo
 	{
 		int playerID;
+        int isAlive;
 
 		int inSight;
 		float lastKnownPosition[3];
 		float lastKnownDirection[3];
 
-		//float lastKnownTankForward[3];		// TODO: implement lastKnownTankForward
-		//float lastKnownCannonForward[3];	// TOOD: implement lastKnownCannonForward
+		float lastKnownTankForward[3];
+		float lastKnownCannonForward[3];
+
+        TankHealthStatus health;
 	};
 
 	struct TankBattleStateData
@@ -65,18 +74,21 @@ namespace tankNet
 		int canFire;
 		int tacticoolCount;
 
-		TankTacticoolInfo tacticoolData[3];
+		TankTacticalInfo tacticoolData[3];
 
 		enum OFFSETS
 		{
-			PLAYER_ID		= 0,
+            MESSAGE_LEN     = 0,
+			PLAYER_ID		= MESSAGE_LEN + sizeof(int),
 			POSITION		= PLAYER_ID + sizeof(int),
 			FORWARD			= POSITION + sizeof(float) * 3,
 			CANNON_FORWARD	= FORWARD + sizeof(float) * 3,
 			CAN_FIRE		= CANNON_FORWARD + sizeof(float) * 3,
 			TACTICOOL_COUNT = CAN_FIRE + sizeof(int),
 			TACTICOOL_ARRAY = TACTICOOL_COUNT + sizeof(int),
-			END				= TACTICOOL_ARRAY + sizeof(TankTacticoolInfo *)
+			END				= TACTICOOL_ARRAY + sizeof(TankTacticalInfo *)
 		};
+
+        int playerCount;
 	};
 }
